@@ -56,6 +56,43 @@ for idx, class_name in enumerate(color_values):
 
 idx2class = {idx:class_name for class_name, idx in class2idx.items()}
 
+# Util functions
+def convert_to_yolo(x, y, w, h, image_width, image_height):
+    """
+    Convert bounding box coordinates to YOLO format.
+    
+    Parameters:
+    - x, y: Top-left corner coordinates of the bounding box.
+    - w, h: Width and height of the bounding box.
+    - image_width, image_height: Dimensions of the image.
+    
+    Returns:
+    - yolo_box: Tuple containing (x_center, y_center, normalized_width, normalized_height)
+                in YOLO format.
+    """
+    # Calculate center of the bounding box
+    x_center = x + w / 2.0
+    y_center = y + h / 2.0
+    
+    # Normalize coordinates and dimensions
+    x_center /= image_width
+    y_center /= image_height
+    w /= image_width
+    h /= image_height
+    
+    return (x_center, y_center, w, h)          
+
+def convert_to_unnormalized(x_center, y_center, w, h, image_width, image_height):
+    # Calculate bounding box coordinates in pixels
+    x = int((x_center - w / 2.0) * image_width)
+    y = int((y_center - h / 2.0) * image_height)
+    w = int(w * image_width)
+    h = int(h * image_height)
+    
+    return x, y, w, h
+
+
+# Main fuctions
 def prepare_data(source_image_dir,
                  source_annotation_dir,
                  dest_annotation_dir
@@ -74,13 +111,12 @@ def prepare_data(source_image_dir,
             df = pd.read_csv(annotation)
             # checking if at least 1 designation is present in annotation
             if df["Designator"].isna().sum() != df.shape[0]:
-
-                # Create annotation txt file
-                annotation_filename = os.path.basename(annotation)
-                name, ext = os.path.splitext(annotation_filename)
-                annotation_file = open(os.path.join(dest_annotation_dir,name+".txt"),"w")
                 image_name = list(df["Source Image Filename"].unique())
                 if os.path.exists(os.path.join(source_image_dir, image_name[0])):
+
+                    # Create annotation txt file
+                    name, _ = os.path.splitext(image_name[0])
+                    annotation_file = open(os.path.join(dest_annotation_dir,name+".txt"),"w")
                     img = cv2.imread(os.path.join(source_image_dir, image_name[0]))
                     img_h, img_w, img_c = img.shape
                     # mask = np.zeros(shape=img.shape, dtype=np.uint8)
@@ -109,38 +145,53 @@ def prepare_data(source_image_dir,
                         # print(x,y,w,h, img_w, img_h)
 
                         annotation_file.write(f"{class_idx} {x_center} {y_center} {w} {h}\n")
-                
                 annotation_file.close()
+                
             pbar.update(1)
 
-def convert_to_yolo(x, y, w, h, image_width, image_height):
-    """
-    Convert bounding box coordinates to YOLO format.
+
+def check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir):
+    '''
+    Input: source image, yolo annotations
+    Output: bounding boxed images
+    '''
+    # Fetch annotation, read corresponding image, put bounding box
+    annotation_files = os.listdir(dest_annotation_dir)
     
-    Parameters:
-    - x, y: Top-left corner coordinates of the bounding box.
-    - w, h: Width and height of the bounding box.
-    - image_width, image_height: Dimensions of the image.
+    with tqdm(total=len(annotation_files)) as pbar:
+        for file in annotation_files:
+            yolo_annotation_filename = os.path.join(dest_annotation_dir, file)
+            name, _ = os.path.splitext(file)
+            if os.path.exists(os.path.join(source_image_dir, name+".png")):
+                img = cv2.imread(os.path.join(source_image_dir, name+".png"))
+                img_h, img_w, img_c = img.shape
+
+                with open(yolo_annotation_filename, "r") as f:
+                    lines = f.readlines()
+                    # list of lists
+                    lines = [line.strip().split() for line in lines]
+
+                    for line in lines:
+                        # line is a list
+                        class_id = int(line[0])
+                        x_center = float(line[1])
+                        y_center = float(line[2])
+                        w = float(line[3])
+                        h = float(line[4])    
+                        x, y, w, h = convert_to_unnormalized(x_center, y_center, w, h, img_w, img_h)
+                        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 3) 
+
+                        class_label = idx2class[class_id]
+                        cv2.putText(img, class_label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+                cv2.imwrite(os.path.join(images_dest_dir,name+".png"),img)
+                        
+            pbar.update(1)
     
-    Returns:
-    - yolo_box: Tuple containing (x_center, y_center, normalized_width, normalized_height)
-                in YOLO format.
-    """
-    # Calculate center of the bounding box
-    x_center = x + w / 2.0
-    y_center = y + h / 2.0
-    
-    # Normalize coordinates and dimensions
-    x_center /= image_width
-    y_center /= image_height
-    w /= image_width
-    h /= image_height
-    
-    return (x_center, y_center, w, h)                   
 
 def main(source_image_dir,
          source_annotation_dir,
-         dest_annotation_dir
+         dest_annotation_dir,
+         images_dest_dir
          ):
     """
     main function which creates mask
@@ -153,16 +204,15 @@ def main(source_image_dir,
     if not os.path.exists(dest_annotation_dir):
         os.makedirs(dest_annotation_dir)
 
-    # if not os.path.exists(dest_masks_sir):
-    #     os.makedirs(dest_masks_sir)
+    if not os.path.exists(images_dest_dir):
+        os.makedirs(images_dest_dir)
 
-    # if not os.path.exists(dest_crops_dir):
-    #     os.makedirs(dest_crops_dir)
-
-    prepare_data(source_image_dir,
-                 source_annotation_dir,
-                 dest_annotation_dir
-                 )
+    # prepare_data(source_image_dir,
+    #              source_annotation_dir,
+    #              dest_annotation_dir
+    #              )
+    
+    check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Create YOLO annotations')
@@ -176,24 +226,22 @@ if __name__ == "__main__":
                         type=str,
                         required=True,
                         help="The path of directory containing annotations")
-    # parser.add_argument('-id',
-    #                     '--images_dest_dir',
-    #                     type=str,
-    #                     required=True,
-    #                     help="The path of destination directory where images needs to be stored")
+    
     parser.add_argument('-ad',
                         '--yolo_annotations_dest_dir',
                         type=str,
                         required=True,
                         help="The path of destination directory where yolo annotations are stored")
-    # parser.add_argument('-cd',
-    #                     '--crops_dest_dir',
-    #                     type=str,
-    #                     required=True,
-    #                     help="The path of destination directory where crops needs to be stored")
+    parser.add_argument('-id',
+                        '--images_dest_dir',
+                        type=str,
+                        required=True,
+                        help="The path of destination directory where bounding boxed images are stored")
+    
     args = parser.parse_args()
 
 
     main(source_image_dir = args.images_dir,
          source_annotation_dir = args.annotations_dir,
-         dest_annotation_dir = args.yolo_annotations_dest_dir)
+         dest_annotation_dir = args.yolo_annotations_dest_dir,
+         images_dest_dir = args.images_dest_dir)
