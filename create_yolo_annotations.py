@@ -23,17 +23,17 @@ import cv2
 
 # color_values is used to encode mask into one hot mapping.
 color_values = {
-    "R": (255, 0, 0),
-    "C": (255, 255, 0),
-    "U": (0, 234, 255), 
+    "R": (255, 0, 0), # 0: Resistor
+    "C": (255, 255, 0), # 1: Capacitor
+    "U": (0, 234, 255), # 2: Integrated Circuit
     "Q": (170, 0, 255),
     "J": (255, 127, 0),
-    "L": (191, 255, 0),
+    "L": (191, 255, 0), # 5: Inductor
     "RA": (0, 149, 255),
     "D": (106, 255, 0),
     "RN": (0, 64, 255),
     "TP": (237, 185, 185),
-    "IC": (185, 215, 237),
+    "IC": (185, 215, 237), # 10: Integrated Circuit
     "P": (231, 233, 185),
     "CR": (220, 185, 237),
     "M": (185, 237, 224),
@@ -50,11 +50,26 @@ color_values = {
     "JP": (255, 250, 200)
 }
 
-class2idx = {}
-for idx, class_name in enumerate(color_values):
-    class2idx[class_name] = idx
+# Custom for passive components
+class2idx = {
+    "R": 0, # resistor
+    "C": 1, # capacitor
+    "L": 2, # inductor
+    "IC": 3, # chip
+    "U": 3, # chip
+    "Others": 4
+}
 
-idx2class = {idx:class_name for class_name, idx in class2idx.items()}
+# for idx, class_name in enumerate(color_values):
+#     class2idx[class_name] = idx
+
+idx2class = {
+    0: "R",
+    1: "C",
+    2: "L",
+    3: "IC",
+    4: "Others"
+}
 
 # Util functions
 def convert_to_yolo(x, y, w, h, image_width, image_height):
@@ -125,7 +140,12 @@ def prepare_data(source_image_dir,
                     for (anote, cat) in zip(vertices_list, designator_list):
                         if cat in color_values:
                             color_code = color_values[cat]
-                            class_idx = class2idx[cat]
+
+                            if cat not in class2idx:
+                                class_idx = 4 # Others
+                            else:
+                                class_idx = class2idx[cat]
+
                         else:
                             continue
                         try:
@@ -182,7 +202,7 @@ def check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_di
                         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 3) 
 
                         class_label = idx2class[class_id]
-                        cv2.putText(img, class_label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2, cv2.LINE_AA)
+                        cv2.putText(img, class_label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 165, 0), 2, cv2.LINE_AA)
                 cv2.imwrite(os.path.join(images_dest_dir,name+".png"),img)
                         
             pbar.update(1)
@@ -207,10 +227,10 @@ def main(source_image_dir,
     if not os.path.exists(images_dest_dir):
         os.makedirs(images_dest_dir)
 
-    # prepare_data(source_image_dir,
-    #              source_annotation_dir,
-    #              dest_annotation_dir
-    #              )
+    prepare_data(source_image_dir,
+                 source_annotation_dir,
+                 dest_annotation_dir
+                 )
     
     check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
 
