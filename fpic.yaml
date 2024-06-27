@@ -1,0 +1,12 @@
+path: /home/heiman/L3/DATASET/UFL_PCB_FULL # dataset root dir
+train: yolo_training/train 
+val: yolo_training/val 
+
+
+# Classes
+names:
+    0: "R"
+    1: "C"
+    2: "L"
+    3: "IC"
+    4: "Others"

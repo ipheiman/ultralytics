@@ -212,8 +212,8 @@ def check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_di
 
 
 def create_train_val_test(source_image_dir, dest_annotation_dir, split_dir):
-    train_ratio = 0.7
-    val_ratio = 0.2
+    train_ratio = 0.8
+    val_ratio = 0.1
     test_ratio = 0.1
     
     # Create train val test on split dir
