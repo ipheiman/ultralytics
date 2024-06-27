@@ -126,7 +126,7 @@ def prepare_data(source_image_dir,
             df = pd.read_csv(annotation)
             # checking if at least 1 designation is present in annotation
             if df["Designator"].isna().sum() != df.shape[0]:
-                image_name = list(df["Source Image Filename"].unique())
+                image_name = list(df["Image File"].unique())
                 if os.path.exists(os.path.join(source_image_dir, image_name[0])):
 
                     # Create annotation txt file
