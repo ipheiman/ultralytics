@@ -5,9 +5,10 @@
 # Adapted from CandleLabAI code
 
 """
-Create YOLO annotations for FPIC dataset
+Create YOLO annotations for FPIC dataset. Save overlaid YOLO bounding boxes on dest_image folder.
 
-Usage: python create_mask.py -i ../../data/pcb_image/ -a ../../data/smd_annotation/ -id ../../data/segmentation/images -ad ../../data/segmentation/masks -cd ../../data/classification/images/
+python create_yolo_annotations.py -i ../../DATASET/UFL_PCB_SAMPLE/pcb_image/ -a ../../DATASET/UFL_PCB_SAMPLE/smd_annotation/ -ad ../../DATASET/UFL_PCB_SAMPLE/yolo_annotations -id ../../DATASET/UFL_PCB_SAMPLE/plotted_yolo_pcb_image
+
 """
 
 from glob import glob
@@ -20,6 +21,8 @@ from tqdm import tqdm
 import pandas as pd
 import numpy as np
 import cv2
+import random
+import shutil 
 
 # color_values is used to encode mask into one hot mapping.
 color_values = {
@@ -206,12 +209,59 @@ def check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_di
                 cv2.imwrite(os.path.join(images_dest_dir,name+".png"),img)
                         
             pbar.update(1)
+
+
+def create_train_val_test(source_image_dir, dest_annotation_dir, split_dir):
+    train_ratio = 0.7
+    val_ratio = 0.2
+    test_ratio = 0.1
     
+    # Create train val test on split dir
+    train_dir = os.path.join(split_dir, 'train')
+    val_dir = os.path.join(split_dir, 'val')
+    test_dir = os.path.join(split_dir, 'test')
+
+    for dir_path in [train_dir, val_dir, test_dir]:
+        os.makedirs(dir_path, exist_ok=True)    
+
+    # List all annotation files in the dest_annotation_dir
+    annotation_files = os.listdir(dest_annotation_dir)
+    
+    # Shuffle the list of annotation files
+    random.shuffle(annotation_files)
+
+    # Calculate the number of files for each split
+    total_files = len(annotation_files)
+    num_train = int(total_files * train_ratio)
+    num_val = int(total_files * val_ratio)
+    num_test = total_files - num_train - num_val
+
+    # Split the files
+    train_files = annotation_files[:num_train]
+    val_files = annotation_files[num_train:num_train + num_val]
+    test_files = annotation_files[num_train + num_val:]
+      
+    # Copy files to their respective directories
+    for file_list, split_dir in zip([train_files, val_files, test_files], [train_dir, val_dir, test_dir]):
+        with tqdm(total=len(file_list)) as pbar:
+            for file_name in file_list:
+                # Copy annotation file
+                source_file = os.path.join(dest_annotation_dir, file_name)
+                dest_file = os.path.join(split_dir, file_name)
+                shutil.copy(source_file, dest_file)
+                
+                # Copy image file
+                image_file = os.path.join(source_image_dir, os.path.splitext(file_name)[0] + '.png')  # Change extension as needed
+                if os.path.exists(image_file):
+                    dest_file = os.path.join(split_dir, os.path.splitext(file_name)[0] + '.png')
+                    shutil.copy(image_file, dest_file)    
+                pbar.update(1)
 
 def main(source_image_dir,
          source_annotation_dir,
          dest_annotation_dir,
-         images_dest_dir
+         images_dest_dir,
+         split_dir
          ):
     """
     main function which creates mask
@@ -223,16 +273,18 @@ def main(source_image_dir,
     # create directories if not exist
     if not os.path.exists(dest_annotation_dir):
         os.makedirs(dest_annotation_dir)
+        prepare_data(source_image_dir,
+                source_annotation_dir,
+                dest_annotation_dir
+                )
 
     if not os.path.exists(images_dest_dir):
         os.makedirs(images_dest_dir)
+        check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
 
-    prepare_data(source_image_dir,
-                 source_annotation_dir,
-                 dest_annotation_dir
-                 )
-    
-    check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
+    if not os.path.exists(split_dir):
+        os.makedirs(split_dir)
+        create_train_val_test(source_image_dir, dest_annotation_dir, split_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Create YOLO annotations')
@@ -258,10 +310,16 @@ if __name__ == "__main__":
                         required=True,
                         help="The path of destination directory where bounding boxed images are stored")
     
+    parser.add_argument('--split',
+                        type=str,
+                        required=True,
+                        help="The path of directory containing train val test split for YOLO training")
+    
     args = parser.parse_args()
 
 
     main(source_image_dir = args.images_dir,
          source_annotation_dir = args.annotations_dir,
          dest_annotation_dir = args.yolo_annotations_dest_dir,
-         images_dest_dir = args.images_dest_dir)
+         images_dest_dir = args.images_dest_dir,
+         split_dir = args.split)
