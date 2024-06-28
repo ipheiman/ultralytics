@@ -1,6 +1,8 @@
 import os
 import argparse
-
+from tqdm import tqdm
+import cv2
+from create_yolo_annotations import check_yolo_annotations
 
 
 def convert_classes(source_labels_dir, dest_labels_dir):
@@ -12,18 +14,20 @@ def convert_classes(source_labels_dir, dest_labels_dir):
             dir_path = os.path.join(source_labels_dir, d)
             annotation_files = os.listdir(dir_path)
 
-            for file in annotation_files:
-                filepath = os.path.join(source_labels_dir,d,file)
+            with tqdm(total=len(annotation_files)) as pbar:
+                for file in annotation_files:
+                    filepath = os.path.join(source_labels_dir,d,file)
 
-                with open(filepath, "r") as f:
-                    lines = f.readlines()
-                    lines = [line.strip().split("\t") for line in lines]
+                    with open(filepath, "r") as f:
+                        lines = f.readlines()
+                        lines = [line.strip().split("\t") for line in lines]
 
-                    # Write to dest_labels_dir
-                    dest_annotation_file = open(os.path.join(dest_labels_dir,d,file))
-                    mapping_to_5_classes(lines, dest_annotation_file)
-                    dest_annotation_file.close()
+                        # Write to dest_labels_dir
+                        dest_annotation_file = open(os.path.join(dest_labels_dir,d,file), "w")
+                        mapping_to_5_classes(lines, dest_annotation_file)
+                        dest_annotation_file.close()
                     
+                    pbar.update(1)
 
 
 
@@ -54,12 +58,6 @@ def mapping_to_5_classes(lines, file):
 
 
 
-        
-
-
-
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Convert labels for NTU PCB dataset')
     parser.add_argument("--source_labels_dir",
@@ -71,6 +69,12 @@ if __name__ == "__main__":
                         type=str,
                         required=True,
                         help="The path of directory to store converted NTU PCB labels")    
+
+    parser.add_argument('-id',
+                        '--images_dest_dir',
+                        type=str,
+                        required=True,
+                        help="The path of destination directory where bounding boxed images are stored")
     
     args = parser.parse_args()
 
@@ -88,6 +92,9 @@ if __name__ == "__main__":
 
         convert_classes(args.source_labels_dir, args.dest_labels_dir)
 
-
+    # create directories if      not exist
+    # if not os.path.exists(args.images_dest_dir):
+    #     os.makedirs(args.images_dest_dir)
+    check_yolo_annotations(args.dest_labels_dir, args.dest_labels_dir, args.images_dest_dir)
 
 

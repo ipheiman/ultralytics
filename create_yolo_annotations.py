@@ -66,13 +66,6 @@ class2idx = {
 # for idx, class_name in enumerate(color_values):
 #     class2idx[class_name] = idx
 
-idx2class = {
-    0: "R",
-    1: "C",
-    2: "L",
-    3: "IC",
-    4: "Others"
-}
 
 # Util functions
 def convert_to_yolo(x, y, w, h, image_width, image_height):
@@ -178,9 +171,19 @@ def check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_di
     Input: source image, yolo annotations
     Output: bounding boxed images
     '''
+    idx2class = {
+    0: "R",
+    1: "C",
+    2: "L",
+    3: "IC",
+    4: "Others"
+}
+
     # Fetch annotation, read corresponding image, put bounding box
     annotation_files = os.listdir(dest_annotation_dir)
-    
+    annotation_files = [file for file in annotation_files if file.endswith(".txt")]
+    print(annotation_files)
+
     with tqdm(total=len(annotation_files)) as pbar:
         for file in annotation_files:
             yolo_annotation_filename = os.path.join(dest_annotation_dir, file)
