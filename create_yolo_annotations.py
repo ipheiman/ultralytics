@@ -276,18 +276,18 @@ def main(source_image_dir,
     # create directories if not exist
     if not os.path.exists(dest_annotation_dir):
         os.makedirs(dest_annotation_dir)
-        prepare_data(source_image_dir,
-                source_annotation_dir,
-                dest_annotation_dir
-                )
+    prepare_data(source_image_dir,
+            source_annotation_dir,
+            dest_annotation_dir
+            )
 
     if not os.path.exists(images_dest_dir):
         os.makedirs(images_dest_dir)
-        check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
+    check_yolo_annotations(source_image_dir, dest_annotation_dir, images_dest_dir)
 
     if not os.path.exists(split_dir):
         os.makedirs(split_dir)
-        create_train_val_test(source_image_dir, dest_annotation_dir, split_dir)
+    create_train_val_test(source_image_dir, dest_annotation_dir, split_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Create YOLO annotations')

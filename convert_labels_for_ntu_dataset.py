@@ -93,8 +93,8 @@ if __name__ == "__main__":
         convert_classes(args.source_labels_dir, args.dest_labels_dir)
 
     # create directories if      not exist
-    # if not os.path.exists(args.images_dest_dir):
-    #     os.makedirs(args.images_dest_dir)
+    if not os.path.exists(args.images_dest_dir):
+        os.makedirs(args.images_dest_dir)
     check_yolo_annotations(args.dest_labels_dir, args.dest_labels_dir, args.images_dest_dir)
 
 
