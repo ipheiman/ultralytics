@@ -10,8 +10,8 @@ model = YOLO("yolov8s.pt")  # load a pretrained model (recommended for training)
 
 # Finetune
 ''' imgsz = 640'''
-# model.train(data="fpic.yaml", epochs=1000, batch=256, device=[0,1,2,3])  # train the model
+# model.train(data="fpic.yaml", epochs=1000, batch=256, device=[1,2])  # train the model
 ''' imgsz = 1280'''
-model.train(data="fpic.yaml", epochs=1000, batch=32, imgsz=1280, device=[0,1,2,3])
+# model.train(data="fpic.yaml", epochs=1000, batch=8, imgsz=1280, device=[1,2])
 ''' imgsz = 2560'''
-# model.train(data="fpic.yaml", epochs=1000, batch=4, imgsz=2560, device=[0,1,2,3])
+model.train(data="fpic.yaml", epochs=1000, batch=2, imgsz=2560, device=[1,2])
