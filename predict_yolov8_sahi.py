@@ -28,6 +28,7 @@ def draw_boxes(image, predictions):
     return image
 
 def main(model_dir, source_img_dir, dest_annotation, dest_img, draw_box = False):
+    pascal = True
 
     if not os.path.exists(dest_annotation):
         os.makedirs(dest_annotation)
@@ -51,6 +52,7 @@ def main(model_dir, source_img_dir, dest_annotation, dest_img, draw_box = False)
                 sliced_results = get_sliced_prediction(
                     image = image,
                     detection_model = detection_model,
+                    postprocess_type = "NMS",
                     slice_height=256,
                     slice_width=256,
                     overlap_height_ratio=0.2,
@@ -69,9 +71,13 @@ def main(model_dir, source_img_dir, dest_annotation, dest_img, draw_box = False)
                     x2 = int(bbox.maxx)
                     y2 = int(bbox.maxy)
                 
-                    category_id = predictions[i].category.id           
-                    (x_center, y_center, w, h) = convert_to_yolo(x1,y1,x2-x1,y2-y1, img_w, img_h)
-                    annotation_file.write(f"{category_id} {x_center} {y_center} {w} {h}\n")
+                    category_id = predictions[i].category.id      
+                    if not pascal:     
+                        (x_center, y_center, w, h) = convert_to_yolo(x1,y1,x2-x1,y2-y1, img_w, img_h)
+                        annotation_file.write(f"{category_id} {x_center} {y_center} {w} {h}\n")
+                    else:
+                        annotation_file.write(f"{category_id} {x1} {y1} {x2} {y2}\n")
+
                 annotation_file.close()
 
 
