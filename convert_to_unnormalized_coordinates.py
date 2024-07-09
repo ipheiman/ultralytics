@@ -1,8 +1,8 @@
 import os
 import cv2
 
-# gt: /home/heiman/L3/DATASET/UFL_PCB_FULL/yolo_training_pascal_format/test/
-# det: /home/heiman/L3/CODE/ultralytics/runs/detect/exp1_fpic_test_SAHI/
+# gt: /data2/iheiman/L3/DATASET/UFL_PCB_FULL/yolo_training_pascal_format/test/
+# det: /data2/iheiman/L3/CODE/ultralytics/runs/detect/exp1_fpic_test_SAHI/
 def convert_to_unnormalized(x_center, y_center, w, h, image_width, image_height):
     # Calculate bounding box coordinates in pixels
     x = int((x_center - w / 2.0) * image_width)
@@ -13,8 +13,8 @@ def convert_to_unnormalized(x_center, y_center, w, h, image_width, image_height)
     return x, y, w, h
 
 def main():
-    gt_dir = "/home/heiman/L3/DATASET/UFL_PCB_FULL/yolo_training/test/"
-    gt_dir_pascalformat = "/home/heiman/L3/DATASET/UFL_PCB_FULL/yolo_training_pascal_format/test/"
+    gt_dir = "/data2/iheiman/L3/DATASET/UFL_PCB_FULL/yolo_training/test/"
+    gt_dir_pascalformat = "/data2/iheiman/L3/DATASET/UFL_PCB_FULL/yolo_training_pascal_format/test/"
 
     if not os.path.exists(gt_dir_pascalformat):
         os.makedirs(gt_dir_pascalformat)

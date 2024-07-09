@@ -2,7 +2,7 @@ import os
 from tqdm import tqdm
 
 def main():
-    det_dir = "/home/heiman/L3/CODE/ultralytics/runs/detect/exp1_fpic_test_SAHI/"
+    det_dir = "/data2/iheiman/L3/CODE/ultralytics/runs/detect/exp1_fpic_test_SAHI/"
     files = os.listdir(det_dir)
 
     with tqdm(total = len(files)) as pbar:

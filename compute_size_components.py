@@ -22,27 +22,38 @@ def main(images_dir, annotation_dir, dest_dir):
         for file in annotation_files:
             yolo_annotation_filename = os.path.join(annotation_dir, file)
             name, _ = os.path.splitext(file)
-            if os.path.exists(os.path.join(images_dir, name+".png")):
+ 
+            try:
                 img = cv2.imread(os.path.join(images_dir, name+".png"))
-                img_h, img_w, img_c = img.shape
+                if img is None:
+                    raise FileNotFoundError
+            except FileNotFoundError:
+                # If .png file is not found, attempt to read a .jpg file
+                img = cv2.imread(os.path.join(images_dir, name + ".jpg"))
+                if img is None:
+                    img = cv2.imread(os.path.join(images_dir, name + ".JPG"))
+                    if img is None:
+                        raise FileNotFoundError(f"Neither .png nor .jpg image found for {name}")
 
-                with open(yolo_annotation_filename, "r") as f:
-                    lines = f.readlines()
-                    # list of lists
-                    lines = [line.strip().split() for line in lines]
+            img_h, img_w, img_c = img.shape
 
-                    for line in lines:
-                        # line is a list
-                        # YOLO format
-                        class_id = int(line[0])
-                        x_center = float(line[1])
-                        y_center = float(line[2])
-                        w = float(line[3])
-                        h = float(line[4])    
-                        _, _, ori_w, ori_h = convert_to_unnormalized(x_center, y_center, w, h, img_w, img_h)
-                        data.append([class_id, ori_h, ori_w])
+            with open(yolo_annotation_filename, "r") as f:
+                lines = f.readlines()
+                lines = [line.strip().split() for line in lines]
+
+                for line in lines:
+                    # YOLO format
+                    class_id = int(line[0])
+                    x_center = float(line[1])
+                    y_center = float(line[2])
+                    w = float(line[3])
+                    h = float(line[4])    
+                    _, _, ori_w, ori_h = convert_to_unnormalized(x_center, y_center, w, h, img_w, img_h)
+ 
+                    data.append([yolo_annotation_filename, class_id, ori_h, ori_w])
+            pbar.update(1)
     # Create a DataFrame
-    df = pd.DataFrame(data, columns=['Component', 'Height', 'Width'])
+    df = pd.DataFrame(data, columns=['Filename', 'Component', 'Height', 'Width'])
 
     # Save DataFrame
     df.to_csv(os.path.join(dest_dir, "size_of_components.csv"), index = False)

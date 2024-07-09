@@ -1,4 +1,4 @@
-path: /home/heiman/L3/DATASET/UFL_PCB_FULL # dataset root dir
+path: /data2/iheiman/L3/DATASET/UFL_PCB_FULL # dataset root dir
 train: yolo_training/train 
 val: yolo_training/val 
 # val: yolo_training/test 
